@@ -2,6 +2,7 @@
 #include<fstream>
 #include<vector>
 #include<sstream>
+#include<windows.h>
 using namespace std;
 vector<string>split(const string& s,char delimiter){
 	vector<string>tokens;
@@ -43,11 +44,13 @@ int kmp_matcher(vector<uint8_t>& data,const string& pattern){
 	}
 	return -1;
 }
-
+bool success;
 void patch(const string& in_file,const string& out_file,const vector<pair<string,string>>& byte_pairs){
+	success=true;
 	ifstream input(in_file,ios::binary);
 	if(!input.good()){
 		cout<<"找不到 GameAssembly.dll 文件\n";
+		success=false;
 		return;
 	}
 	vector<uint8_t>data((istreambuf_iterator<char>(input)),istreambuf_iterator<char>());
@@ -64,7 +67,11 @@ void patch(const string& in_file,const string& out_file,const vector<pair<string
 			copy(repl_bytes.begin(),repl_bytes.end(),data.begin()+index);
 		}
 		else
+		{
 			cout<<"No matches found for "<<orig<<endl;
+			success=false;
+			return;
+		}
 	}
 	ofstream output(out_file,ios::binary);
 	output.write(reinterpret_cast<const char*>(data.data()),data.size());
@@ -75,8 +82,10 @@ int main(){
 		{"40 53 48 83 EC ?? 8B D9 33 C9 E8 ?? ?? ?? ?? 80 3D ?? ?? ?? ?? ?? 75 ?? 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 45 33 C0 8B D3 48 8B 88 ?? ?? ?? ?? 48 8B 49 ?? 48 83 C4 ?? 5B E9 ?? ?? ?? ?? CC CC CC CC CC 40 55 53","B8 85 47 DE 63 C3"},//public static uint GetEarliestPurchaseUnixTime(AppId_t nAppID){}
 		{"48 83 EC ?? 80 3D ?? ?? ?? ?? ?? 75 ?? 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? C6 05 ?? ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? F6 81 ?? ?? ?? ?? ?? 74 ?? 83 B9 ?? ?? ?? ?? ?? 75 ?? E8 ?? ?? ?? ?? 33 C9 E8 ?? ?? ?? ?? 84 C0 0F 85","48 B8 01 00 00 00 00 00 00 00 C3"} //public static bool get_isSelectedUnlockMaster(){}
 	};
-	string infile="GameAssembly.dll",outfile="GameAssembly_patched.dll";
-	patch(infile,outfile,match);
+	string name="GameAssembly.dll",outfile="GameAssembly_patched.dll";
+	patch(name,outfile,match);
+	if(success)
+	system("rename GameAssembly.dll GameAssembly.dll.bak && rename GameAssembly_patched.dll GameAssembly.dll");
 	cout<<"按任意键退出";
 	cin.get();
 	return 0;
